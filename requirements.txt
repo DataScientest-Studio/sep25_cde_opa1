@@ -1,1 +1,12 @@
+requests~=2.32.5
+python-dotenv~=1.2.1
+pandas~=2.3.3
+numpy~=2.3.5
 
+# MySQL / PGSql
+SQLAlchemy~=2.0.45
+psycopg~=3.3.2
+# Mongo
+pymongo~=4.15.5
+
+python-binance~=1.0.33

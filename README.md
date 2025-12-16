@@ -1,7 +1,37 @@
-Project Name
+SEP25_CDE_OPA_GROUPE_1
 ==============================
 
-This project is a starting Pack for MLOps projects based on the subject "movie_recommandation". It's not perfect so feel free to make some modifications on it.
+## Définition du projet
+
+De nos jours, le monde des crypto commence à prendre une place importante et grossit. Il s’agit tout simplement de
+marchés financiers assez volatiles et instables se basant sur la technologie de la Blockchain.
+
+Le but de ce projet est de créer un bot de trading, basé sur un modèle de Machine Learning, qui investira sur des
+marchés crypto.
+
+## Etapes
+- Récupération des données via l'API Binance
+  - Données historiques, pour l'entraînement des modèles
+  - Données en temps réel, pour le déploiement du bot de trading
+- Exploration et analyse des données
+- Préparation des données
+- Entraînement de modèles de Machine Learning
+- Évaluation des modèles
+- Déploiement du bot de trading
+
+## Listes des symboles utilisés
+- BTCUSDT
+- BTCUSD ?
+- BTCEUR ?
+- ETHBTC ?
+- ETHUSDT
+- SOLUSDT
+
+## Documentation et liens utiles
+- [Documentation Binance API](https://developers.binance.com/docs/binance-spot-api-docs)
+- [Tutoriel sur l'utilisation de l'API Binance avec Python](https://python-binance.readthedocs.io/en/latest/)
+- [Liste et cours des cryptomonnaies](https://fr.tradingview.com/markets/cryptocurrencies/prices-all/)
+
 
 Project Organization
 ------------
