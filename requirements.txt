@@ -8,5 +8,5 @@ SQLAlchemy~=2.0.45
 psycopg~=3.3.2
 # Mongo
 pymongo~=4.15.5
-
+# Binance API
 python-binance~=1.0.33

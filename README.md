@@ -10,9 +10,10 @@ Le but de ce projet est de créer un bot de trading, basé sur un modèle de Mac
 marchés crypto.
 
 ## Etapes
+
 - Récupération des données via l'API Binance
-  - Données historiques, pour l'entraînement des modèles
-  - Données en temps réel, pour le déploiement du bot de trading
+    - Données historiques, pour l'entraînement des modèles
+    - Données en temps réel, pour le déploiement du bot de trading
 - Exploration et analyse des données
 - Préparation des données
 - Entraînement de modèles de Machine Learning
@@ -20,18 +21,16 @@ marchés crypto.
 - Déploiement du bot de trading
 
 ## Listes des symboles utilisés
+
 - BTCUSDT
-- BTCUSD ?
-- BTCEUR ?
-- ETHBTC ?
 - ETHUSDT
 - SOLUSDT
 
 ## Documentation et liens utiles
+
 - [Documentation Binance API](https://developers.binance.com/docs/binance-spot-api-docs)
 - [Tutoriel sur l'utilisation de l'API Binance avec Python](https://python-binance.readthedocs.io/en/latest/)
 - [Liste et cours des cryptomonnaies](https://fr.tradingview.com/markets/cryptocurrencies/prices-all/)
-
 
 Project Organization
 ------------
