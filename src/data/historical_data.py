@@ -5,7 +5,7 @@ import json
 from datetime import datetime
 import datetime
 
-from config import SETTINGS
+from .config import SETTINGS
 
 def get_historical_data(symbol: str, interval: str, start_time: datetime, end_time: datetime) -> pd.DataFrame:
     """

@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Union
 from pymongo import UpdateOne
 from .connector.connector import connect_to_mongo
-from config import SETTINGS
+from .config import SETTINGS
 from .historical_data import get_historical_data
 
 logger = logging.getLogger("CRYPTO_BOT")
