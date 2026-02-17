@@ -2,7 +2,7 @@ from pymongo import MongoClient
 from pymongo.database import Database
 import logging
 import sqlalchemy
-from typing import Dict, Any, TypedDict, Tuple
+from typing import TypedDict
 from sqlalchemy.engine import Engine
 import pandas as pd
 import datetime
