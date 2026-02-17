@@ -81,7 +81,7 @@ Une API FastAPI permet d'interroger les données historiques stockées dans Mong
 #### Documentation de l'API
 
 - Documentation interactive : `http://localhost:8000/docs`
-- Documentation complète : [docs/API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)
+- Documentation complète : [references/API_DOCUMENTATION.md](references/API_DOCUMENTATION.md)
 
 #### Endpoints principaux
 
@@ -101,6 +101,10 @@ Une API FastAPI permet d'interroger les données historiques stockées dans Mong
 ## Documentation et liens utiles
 
 - [Documentation Binance API](https://developers.binance.com/docs/binance-spot-api-docs)
+- [Documentation FastAPI](https://fastapi.tiangolo.com/)
+- [Documentation MongoDB](https://docs.mongodb.com/)
+- [Documentation PostgreSQL](https://www.postgresql.org/docs/)
+- [Documentation Docker](https://docs.docker.com/)
 
 Project Organization
 ------------
@@ -108,10 +112,10 @@ Project Organization
     ├── LICENSE
     ├── README.md          <- The top-level README for developers using this project.
     ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
+    │   ├── external       <- Data from third party sources.
+    │   ├── interim        <- Intermediate data that has been transformed.
+    │   ├── processed      <- The final, canonical data sets for modeling.
+    │   └── raw            <- The original, immutable data dump.
     │
     ├── logs               <- Logs from training and predicting
     │
@@ -122,9 +126,10 @@ Project Organization
     │                         `1.0-jqp-initial-data-exploration`.
     │
     ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+    │   └── API_DOCUMENTATION.md
     │
     ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
+    │   └── figures        <- Generated graphics and figures to be used in reporting
     │
     ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
     │                         generated with `pip freeze > requirements.txt`
@@ -156,11 +161,6 @@ Project Organization
     │   ├── visualization  <- Scripts to create exploratory and results oriented visualizations
     │   │   └── visualize.py
     │   └── config         <- Describe the parameters used in train_model.py and predict_model.py
-    │
-    ├── docs/                       # Documentation
-    │   ├── API_DOCUMENTATION.md
-    │   ├── QUICKSTART.md
-    │   └── TROUBLESHOOTING.md
     └── run_api.py         <- Script to run the FastAPI server
     └── start_stack.sh     <- Script to start the entire Docker stack (MongoDB, PostgreSQL, API)
     └── start_stack.bat    <- Script Windows to start the entire Docker stack
