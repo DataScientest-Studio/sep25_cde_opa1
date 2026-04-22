@@ -4,7 +4,7 @@ import pandas as pd
 
 df = get_historical_data(symbol="BTCUSDT",
                           start_time=datetime(2024, 4, 1), interval="1h",
-                          end_time=datetime(2026, 4, 21))
+                          end_time=datetime(2026, 4, 20))
 
 
 df1 = df.copy()
@@ -12,7 +12,7 @@ df1 = df.copy()
 '''on créé une colonne qui indique la variation en pourcentage d'une bougie (possible de tester avec high et low aussi)'''
 df1.loc[:,'CandleVariation'] = (df['close']- df['open'])/df['open']
 
-''' idem pour le volume, variation de volume'''
+''' idem pour le volume, variation de volume,'''
 df1.loc[:,'VolumeChange'] = df['volume'].pct_change()
 
 '''La variation future'''
@@ -23,7 +23,7 @@ n = 24
 "créé n colonne pour n features, soit n variations de prix précédentes qui expliqueront le prix suivant "
 for i in range(1, n+1):
         df1[f'variation_lag_{i}'] = df1['CandleVariation'].shift(i)
-        df1[f'Volume_lag_{i}'] = df1['VolumeChange'].shift(i)
+        df1[f'Volume_lag_{i}'] = df1['VolumeChange'].shift(i) # Après test d'importance des features pas significatif
 
 df1 = df1.dropna()
 
@@ -73,3 +73,25 @@ y_pred = regressor.predict(X_test)
 '''% du temps ou le signe est correct, juste la direction = hausse ou baisse'''
 direction_correct = np.mean(np.sign(y_pred) == np.sign(y_test))
 print(f"Directional accuracy : {direction_correct:.2%}")
+
+
+from scipy.stats import binomtest
+
+n_correct = np.sum(np.sign(y_pred) == np.sign(y_test))
+n_total = len(y_test)
+
+result = binomtest(n_correct, n_total, p=0.5, alternative='greater')
+print(f"Bonnes prédictions : {n_correct}/{n_total}")
+print(f"p-value : {result.pvalue:.4f}")
+
+
+import pandas as pd
+
+imp = pd.Series(regressor.feature_importances_, index=X_train.columns)
+imp = imp.sort_values(ascending=False)
+
+print("Top 10 features :")
+print(imp.head(10).round(4))
+print("\nBottom 10 features :")
+print(imp.tail(10).round(4))
+print(f"\nTotal features : {len(imp)}")
