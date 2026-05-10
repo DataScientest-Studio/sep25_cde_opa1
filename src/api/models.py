@@ -59,6 +59,8 @@ class PredictResponse(BaseModel):
   price: float
   timestamp: str
   model_version: str
+  spread: Optional[float] = None
+  profitability_threshold: Optional[float] = None
 
 
 class SignalHistoryItem(BaseModel):

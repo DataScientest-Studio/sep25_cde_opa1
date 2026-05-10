@@ -2,15 +2,17 @@
   "symbol": "ETHUSDT",
   "timeframe": "1m",
   "model_name": "lightgbm",
-  "model_version": "ETHUSDT_1m_lightgbm_20260430_105743",
-  "date_train": "2026-04-30T10:57:43.626254+00:00",
+  "model_version": "ETHUSDT_1m_lightgbm_20260509_094958",
+  "date_train": "2026-05-09T09:49:58.053779+00:00",
   "n_train": 30099,
   "n_val": 6451,
   "n_test": 6450,
-  "accuracy": 0.7834,
-  "f1_macro": 0.3961,
-  "sharpe_ratio": 7.4323,
-  "threshold": 0.001,
+  "accuracy": 0.7884,
+  "f1_macro": 0.3541,
+  "sharpe_ratio": -0.7029,
+  "threshold_type": "dynamic",
+  "spread_used": 0.5,
+  "fee_rate": 0.001,
   "feature_cols": [
     "open",
     "high",
@@ -53,14 +55,14 @@
   },
   "all_models": {
     "xgboost": {
-      "accuracy": 0.787,
-      "f1_macro": 0.3922,
-      "sharpe": -6.145
+      "accuracy": 0.7907,
+      "f1_macro": 0.3527,
+      "sharpe": 2.5654
     },
     "lightgbm": {
-      "accuracy": 0.7834,
-      "f1_macro": 0.3961,
-      "sharpe": 7.4323
+      "accuracy": 0.7884,
+      "f1_macro": 0.3541,
+      "sharpe": -0.7029
     }
   }
 }

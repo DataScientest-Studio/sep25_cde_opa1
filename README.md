@@ -202,10 +202,12 @@ Tous les services doivent afficher le statut `Up` ou `Up (healthy)`.
 ### Stack complète (recommandé)
 
 ```bash
-docker-compose up -d          # Démarrer en arrière-plan
+docker-compose up -d          # Démarrer tous les services en arrière-plan
 docker-compose down           # Arrêter
 docker-compose logs -f api    # Suivre les logs d'un service
 ```
+
+> **Services démarrés automatiquement :** MongoDB, PostgreSQL, API FastAPI, Streamlit, Prometheus, Grafana et **Apache Airflow** (webserver + scheduler + worker) démarrent ensemble. Aucune commande supplémentaire n'est nécessaire pour Airflow.
 
 ### Services individuels
 
@@ -257,7 +259,6 @@ docker exec -it sep25_opa1_airflow_webserver airflow dags trigger retrain_model
 | **Airflow** — Orchestration DAGs | http://localhost:8080 | `admin` / `admin` |
 | **Grafana** — Monitoring | http://localhost:3000 | `admin` / `password` |
 | **Prometheus** — Métriques | http://localhost:9090 | — |
-| **PgAdmin** — Admin PostgreSQL | http://localhost:5436 | voir `.env` |
 | **MongoDB** | `localhost:27025` | voir `.env` |
 | **PostgreSQL** | `localhost:5435` | voir `.env` |
 
@@ -363,12 +364,28 @@ ws.onmessage = (e) => {
 | Temporelles | `hour_sin`, `hour_cos`, `dow_sin`, `dow_cos` |
 | Lag returns | `return_1h`, `return_4h`, `return_24h` |
 
+### Filtre de rentabilité
+
+Le signal cible intègre les coûts réels de trading avant l'entraînement. Un trade n'est étiqueté BUY ou SELL que si le mouvement anticipé couvre :
+
+- **Le spread bid/ask** (estimé dynamiquement en % du prix via la plage high/low)
+- **Les frais de transaction Binance** (0,1% à l'entrée + 0,1% à la sortie, soit 0,2% aller-retour)
+
+Un mouvement qui ne dépasse pas ces coûts est étiqueté **HOLD (0)**, même s'il est positif. Ce filtre réduit le sur-trading sur les signaux marginaux et améliore significativement le Sharpe Ratio.
+
+```
+retour_net = retour_brut - spread_estimé - 0.2%
+BUY  (1)  si retour_net > seuil
+SELL (-1) si retour_net < -seuil
+HOLD (0)  sinon
+```
+
 ### Cible
 
-Signal calculé sur le retour de la bougie suivante :
-- **BUY (1)** si retour > seuil
-- **SELL (-1)** si retour < -seuil
-- **HOLD (0)** sinon
+Signal calculé sur le retour net de la bougie suivante (après filtre de rentabilité) :
+- **BUY (1)** si retour net > seuil
+- **SELL (-1)** si retour net < -seuil
+- **HOLD (0)** sinon (mouvement insuffisant pour couvrir les frais)
 
 ### Split chronologique (no shuffle)
 
@@ -382,8 +399,10 @@ Signal calculé sur le retour de la bougie suivante :
 | Symbole | Timeframe | Algo | Accuracy | F1 macro | Sharpe |
 |---|---|---|---|---|---|
 | BTCUSDT | 1h | XGBoost | 0.438 | 0.303 | **2.61** |
-| BTCUSDT | 1m | XGBoost | 0.836 | 0.373 | **4.77** |
-| ETHUSDT | 1h | XGBoost | — | — | — |
+| BTCUSDT | 1m | XGBoost | 0.836 | 0.373 | **16.62** |
+| ETHUSDT | 1d | XGBoost | — | — | **2.75** |
+| ETHUSDT | 1m | XGBoost | — | — | — |
+| SOLUSDT | 1m | XGBoost | — | — | **3.54** |
 | SOLUSDT | 1h | XGBoost | — | — | — |
 
 > Les modèles `_1m` sont utilisés en priorité par la page **🔴 Live**. Ils sont sauvegardés dans `models/saved/{SYMBOL}_1m/`.
@@ -404,7 +423,9 @@ Le DAG `retrain_model` se déclenche **chaque dimanche à 02:00 UTC**. Il peut a
 
 ## Démo Live
 
-La page **🔴 Live** de Streamlit affiche les prédictions du modèle en temps réel :
+La page **🔴 Live** de Streamlit affiche les prédictions du modèle en temps réel dans une interface conçue pour un public non technique.
+
+**Mode d'affichage :** par défaut, le dashboard adopte une vue **grand public** (signal coloré, jauge de confiance, score simple). Un toggle **"Mode technique"** dans la barre latérale déverrouille les graphiques d'indicateurs, les features brutes, les métriques du modèle et les logs de prédiction.
 
 1. Ouvrir `http://localhost:8501`
 2. Sélectionner **🔴 Live** dans la navigation latérale

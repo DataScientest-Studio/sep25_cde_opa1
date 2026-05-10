@@ -48,6 +48,9 @@ LABEL_MAP: Dict[int, int] = {-1: 0, 0: 1, 1: 2}
 LABEL_INV: Dict[int, int] = {0: -1, 1: 0, 2: 1}
 SIGNAL_NAMES: Dict[int, str] = {-1: "SELL", 0: "HOLD", 1: "BUY"}
 
+SPREAD_FALLBACK: Dict[str, float] = {"BTCUSDT": 2.0, "ETHUSDT": 0.5, "SOLUSDT": 0.1}
+FEE_RATE = 0.001  # 0.1 % taker fee included in threshold
+
 # Same feature columns as the 1h model — semantics change (e.g. return_1h = 1-min return on 1m tf)
 FEATURE_COLS: List[str] = [
     "open", "high", "low", "close", "volume",
@@ -79,6 +82,17 @@ _RENAME: Dict[str, str] = {
     "SMA_200":        "sma_200",
     "ATRr_14":        "atr_14",
 }
+
+
+def _get_spread(symbol: str) -> float:
+    """Fetch live bid-ask spread via ccxt; fall back to hardcoded values if unavailable."""
+    try:
+        import ccxt  # optional dependency
+        exchange = ccxt.binance()
+        ob = exchange.fetch_order_book(symbol[:-4] + "/USDT", limit=1)
+        return float(ob["asks"][0][0] - ob["bids"][0][0])
+    except Exception:
+        return SPREAD_FALLBACK.get(symbol, 1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -149,12 +163,13 @@ def build_features_1m(df: pd.DataFrame) -> pd.DataFrame:
 # Target
 # ---------------------------------------------------------------------------
 
-def make_target(close: pd.Series, threshold: float) -> pd.Series:
-    """Next-candle return classification (BUY=1, SELL=-1, HOLD=0)."""
+def make_target(close: pd.Series, spread: float) -> pd.Series:
+    """Next-candle return classification with dynamic threshold (BUY=1, SELL=-1, HOLD=0)."""
+    threshold_rate = (spread + close * FEE_RATE) / close
     next_ret = close.shift(-1) / close - 1
     signal = pd.Series(0.0, index=close.index)
-    signal[next_ret > threshold] = 1.0
-    signal[next_ret < -threshold] = -1.0
+    signal[next_ret > threshold_rate] = 1.0
+    signal[next_ret < -threshold_rate] = -1.0
     signal[next_ret.isna()] = np.nan
     return signal
 
@@ -226,12 +241,13 @@ def _fit_lightgbm(
 # Main pipeline
 # ---------------------------------------------------------------------------
 
-def retrain_symbol(symbol: str, days: int, threshold: float) -> Tuple[object, Dict]:
-    logger.info(f"=== {symbol} — {days}d of 1m data, threshold={threshold} ===")
+def retrain_symbol(symbol: str, days: int) -> Tuple[object, Dict]:
+    spread = _get_spread(symbol)
+    logger.info(f"=== {symbol} — {days}d of 1m data, spread={spread:.4f}  fee={FEE_RATE} ===")
 
     raw_df = fetch_klines_1m(symbol, days)
     df = build_features_1m(raw_df)
-    df["target"] = make_target(df["close"], threshold)
+    df["target"] = make_target(df["close"], spread)
     df = df.dropna(subset=FEATURE_COLS + ["target"]).reset_index(drop=True)
     df["target"] = df["target"].astype(int)
 
@@ -291,7 +307,9 @@ def retrain_symbol(symbol: str, days: int, threshold: float) -> Tuple[object, Di
         "accuracy":      round(best_acc, 4),
         "f1_macro":      round(best_f1, 4),
         "sharpe_ratio":  round(best_sh, 4),
-        "threshold":     threshold,
+        "threshold_type": "dynamic",
+        "spread_used":   round(spread, 4),
+        "fee_rate":      FEE_RATE,
         "feature_cols":  FEATURE_COLS,
         "label_map":     LABEL_MAP,
         "label_inv":     LABEL_INV,
@@ -326,16 +344,14 @@ def save_model_1m(model: object, metrics: Dict, symbol: str) -> Path:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Retrain CryptoBot on 1m Binance data")
-    parser.add_argument("--symbol",    default=None,  help="Single symbol (default: all)")
-    parser.add_argument("--days",      type=int, default=30, help="Days of 1m data to fetch")
-    parser.add_argument("--threshold", type=float, default=0.001,
-                        help="Return threshold for BUY/SELL classification (default: 0.001 = 0.1%%)")
+    parser.add_argument("--symbol", default=None, help="Single symbol (default: all)")
+    parser.add_argument("--days",   type=int, default=30, help="Days of 1m data to fetch")
     args = parser.parse_args()
 
     targets = [args.symbol.upper()] if args.symbol else SYMBOLS
     for sym in targets:
         try:
-            model, metrics = retrain_symbol(sym, args.days, args.threshold)
+            model, metrics = retrain_symbol(sym, args.days)
             save_model_1m(model, metrics, sym)
             print(
                 f"\n{sym}: acc={metrics['accuracy']}  "

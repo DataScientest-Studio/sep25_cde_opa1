@@ -1,15 +1,17 @@
 {
   "symbol": "BTCUSDT",
   "model_name": "xgboost",
-  "model_version": "BTCUSDT_xgboost_20260427_084054",
-  "date_train": "2026-04-27T08:40:54.685041+00:00",
+  "model_version": "BTCUSDT_xgboost_20260509_095516",
+  "date_train": "2026-05-09T09:55:16.255604+00:00",
   "n_train": 371,
   "n_val": 80,
   "n_test": 80,
-  "accuracy": 0.4375,
-  "f1_macro": 0.3032,
-  "sharpe_ratio": 2.6062,
-  "threshold": 0.005,
+  "accuracy": 0.475,
+  "f1_macro": 0.2147,
+  "sharpe_ratio": 2.1418,
+  "threshold_type": "dynamic",
+  "spread_used": 2.0,
+  "fee_rate": 0.001,
   "feature_cols": [
     "open",
     "high",
@@ -52,14 +54,14 @@
   },
   "all_models": {
     "xgboost": {
-      "accuracy": 0.4375,
-      "f1_macro": 0.3032,
-      "sharpe": 2.6062
+      "accuracy": 0.475,
+      "f1_macro": 0.2147,
+      "sharpe": 2.1418
     },
     "lightgbm": {
-      "accuracy": 0.4125,
-      "f1_macro": 0.229,
-      "sharpe": 2.2768
+      "accuracy": 0.45,
+      "f1_macro": 0.2069,
+      "sharpe": 1.621
     }
   }
 }

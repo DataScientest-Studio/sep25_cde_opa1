@@ -20,6 +20,68 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s:%(name)s:%(message
 SAVED_DIR = Path(__file__).parent.parent.parent / "models" / "saved"
 SIGNAL_NAMES: Dict[int, str] = {1: "BUY", 0: "HOLD", -1: "SELL"}
 
+# Fallback spreads (USD) used when Binance is unreachable within the timeout.
+_FALLBACK_SPREADS: Dict[str, float] = {
+    "BTCUSDT": 2.0,
+    "ETHUSDT": 0.5,
+    "SOLUSDT": 0.1,
+}
+
+
+def calculate_profitability_filter(
+    symbol: str, confidence: float, signal: int, price: float
+) -> Dict:
+    """
+    Fetch bid/ask from Binance via ccxt, compute profitability threshold,
+    and override signal to HOLD if expected movement < threshold.
+
+    threshold = (spread + binance_fees_0.1pct) × 10
+    expected_movement = confidence × price
+
+    Returns: {signal, spread, profitability_threshold}
+    Network call has a 3-second timeout; on failure uses a fixed fallback spread
+    so the prediction is never blocked.
+    """
+    try:
+        import ccxt
+
+        try:
+            exchange = ccxt.binance({"timeout": 3000})
+            ticker = exchange.fetch_ticker(symbol)
+            bid = float(ticker.get("bid") or 0.0)
+            ask = float(ticker.get("ask") or 0.0)
+            spread = ask - bid
+            spread_source = "live"
+        except Exception as net_err:
+            spread = _FALLBACK_SPREADS.get(symbol, 1.0)
+            spread_source = "fallback"
+            logger.warning(
+                f"[{symbol}] Binance ticker unavailable ({net_err}); "
+                f"using fallback spread={spread}"
+            )
+
+        fees = price * 0.001  # 0.1% Binance maker/taker
+        threshold = (spread + fees) * 10
+        expected_movement = confidence * price
+
+        filtered_signal = signal
+        if signal != 0 and expected_movement < threshold:
+            filtered_signal = 0
+            logger.info(
+                f"[{symbol}] Profitability filter → HOLD "
+                f"(expected={expected_movement:.4f} < threshold={threshold:.4f}, "
+                f"spread={spread:.6f} [{spread_source}])"
+            )
+
+        return {
+            "signal": filtered_signal,
+            "spread": round(spread, 6),
+            "profitability_threshold": round(threshold, 6),
+        }
+    except Exception as e:
+        logger.warning(f"[{symbol}] Profitability filter unavailable: {e}")
+        return {"signal": signal, "spread": None, "profitability_threshold": None}
+
 
 def load_model(symbol: str) -> tuple:
     """Load (model, metrics) from models/saved/<symbol>/model.pkl."""
@@ -80,15 +142,22 @@ def predict(symbol: str) -> Dict:
 
     # label_inv maps model class index → original signal (-1 / 0 / 1)
     signal = label_inv[pred_idx]
+    price = float(df["close"].iloc[0])
+
+    # Apply profitability filter (spread + fees check)
+    pf = calculate_profitability_filter(symbol, confidence, signal, price)
+    signal = pf["signal"]
 
     return {
         "symbol": symbol,
         "signal": signal,
         "signal_label": SIGNAL_NAMES[signal],
         "confidence": round(confidence, 4),
-        "price": float(df["close"].iloc[0]),
+        "price": price,
         "timestamp": str(df["timestamp"].iloc[0]),
         "model_version": metrics["model_version"],
+        "spread": pf["spread"],
+        "profitability_threshold": pf["profitability_threshold"],
     }
 
 

@@ -2,15 +2,17 @@
   "symbol": "SOLUSDT",
   "timeframe": "1m",
   "model_name": "xgboost",
-  "model_version": "SOLUSDT_1m_xgboost_20260430_105827",
-  "date_train": "2026-04-30T10:58:27.795735+00:00",
+  "model_version": "SOLUSDT_1m_xgboost_20260509_095035",
+  "date_train": "2026-05-09T09:50:35.031672+00:00",
   "n_train": 30099,
   "n_val": 6451,
   "n_test": 6450,
-  "accuracy": 0.8326,
-  "f1_macro": 0.4012,
-  "sharpe_ratio": 1.7868,
-  "threshold": 0.001,
+  "accuracy": 0.894,
+  "f1_macro": 0.3334,
+  "sharpe_ratio": 3.539,
+  "threshold_type": "dynamic",
+  "spread_used": 0.1,
+  "fee_rate": 0.001,
   "feature_cols": [
     "open",
     "high",
@@ -53,14 +55,14 @@
   },
   "all_models": {
     "xgboost": {
-      "accuracy": 0.8326,
-      "f1_macro": 0.4012,
-      "sharpe": 1.7868
+      "accuracy": 0.894,
+      "f1_macro": 0.3334,
+      "sharpe": 3.539
     },
     "lightgbm": {
-      "accuracy": 0.822,
-      "f1_macro": 0.3846,
-      "sharpe": -7.8625
+      "accuracy": 0.8752,
+      "f1_macro": 0.3213,
+      "sharpe": 4.4983
     }
   }
 }

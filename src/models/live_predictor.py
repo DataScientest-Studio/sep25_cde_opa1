@@ -26,7 +26,7 @@ BINANCE_KLINES_URL = "https://api.binance.com/api/v3/klines"
 BINANCE_WS_BASE = "wss://stream.binance.com:9443/ws"
 WINDOW_SIZE = 350       # rolling window (> SMA_200 + lag_24 warmup)
 SIGNAL_NAMES: Dict[int, str] = {1: "BUY", 0: "HOLD", -1: "SELL"}
-TARGET_THRESHOLD = 0.001  # 0.1% — threshold for evaluating 1m predictions
+TARGET_THRESHOLD = 0.0005  # 0.05% — threshold for evaluating 1m predictions
 
 # pandas-ta column names → FEATURE_COLS names (must match store_features.COLUMN_MAP)
 _RENAME: Dict[str, str] = {
@@ -184,18 +184,29 @@ class LivePredictor:
         pred_idx = int(np.argmax(proba))
         confidence = float(proba[pred_idx])
         signal = self.label_inv[pred_idx]
+        price = float(row["close"])
+
+        # Apply profitability filter (spread + fees check)
+        try:
+            from src.models.predict_model import calculate_profitability_filter
+        except ImportError:
+            from models.predict_model import calculate_profitability_filter
+        pf = calculate_profitability_filter(self.symbol, confidence, signal, price)
+        signal = pf["signal"]
 
         return {
-            "symbol":          self.symbol,
-            "signal":          signal,
-            "signal_label":    SIGNAL_NAMES[signal],
-            "confidence":      round(confidence, 4),
-            "price":           float(row["close"]),
-            "timestamp":       datetime.now(timezone.utc).isoformat(),
-            "model_version":   self.metrics["model_version"],
-            "evaluated":       False,
-            "correct":         None,
-            "actual_ret_pct":  None,
+            "symbol":                   self.symbol,
+            "signal":                   signal,
+            "signal_label":             SIGNAL_NAMES[signal],
+            "confidence":               round(confidence, 4),
+            "price":                    price,
+            "timestamp":                datetime.now(timezone.utc).isoformat(),
+            "model_version":            self.metrics["model_version"],
+            "evaluated":                False,
+            "correct":                  None,
+            "actual_ret_pct":           None,
+            "spread":                   pf["spread"],
+            "profitability_threshold":  pf["profitability_threshold"],
         }
 
     def _evaluate_last_prediction(self, new_close: float) -> None:

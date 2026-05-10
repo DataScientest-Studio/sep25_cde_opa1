@@ -31,7 +31,8 @@ LABEL_MAP: Dict[int, int] = {-1: 0, 0: 1, 1: 2}
 LABEL_INV: Dict[int, int] = {0: -1, 1: 0, 2: 1}
 SIGNAL_NAMES: Dict[int, str] = {-1: "SELL", 0: "HOLD", 1: "BUY"}
 
-TARGET_THRESHOLD = 0.005   # 0.5 % next-day return → BUY or SELL
+SPREAD_FALLBACK: Dict[str, float] = {"BTCUSDT": 2.0, "ETHUSDT": 0.5, "SOLUSDT": 0.1}
+FEE_RATE = 0.001  # 0.1 % taker fee included in threshold
 
 FEATURE_COLS: List[str] = [
     "open", "high", "low", "close", "volume",
@@ -43,6 +44,17 @@ FEATURE_COLS: List[str] = [
     "hour_sin", "hour_cos", "dow_sin", "dow_cos",
     "return_1h", "return_4h", "return_24h",
 ]
+
+
+def _get_spread(symbol: str) -> float:
+    """Fetch live bid-ask spread via ccxt; fall back to hardcoded values if unavailable."""
+    try:
+        import ccxt  # optional dependency
+        exchange = ccxt.binance()
+        ob = exchange.fetch_order_book(symbol[:-4] + "/USDT", limit=1)
+        return float(ob["asks"][0][0] - ob["bids"][0][0])
+    except Exception:
+        return SPREAD_FALLBACK.get(symbol, 1.0)
 
 
 # ---------------------------------------------------------------------------
@@ -73,18 +85,21 @@ def load_features(symbol: str) -> pd.DataFrame:
 # Target engineering
 # ---------------------------------------------------------------------------
 
-def make_target(close: pd.Series) -> pd.Series:
+def make_target(close: pd.Series, spread: float) -> pd.Series:
     """
-    Next-period return classification.
+    Dynamic-threshold next-period return classification.
 
-    Returns a float Series with NaN on the last row (no future period).
-    Values: 1.0 (BUY), -1.0 (SELL), 0.0 (HOLD).
+    threshold = spread + price × FEE_RATE  (varies per candle with price)
+    BUY  if next_return >  threshold / price
+    SELL if next_return < -threshold / price
+    HOLD otherwise
     """
+    threshold_rate = (spread + close * FEE_RATE) / close
     next_ret = close.shift(-1) / close - 1
     signal = pd.Series(0.0, index=close.index)
-    signal[next_ret > TARGET_THRESHOLD] = 1.0
-    signal[next_ret < -TARGET_THRESHOLD] = -1.0
-    signal[next_ret.isna()] = np.nan   # last row — no label
+    signal[next_ret > threshold_rate] = 1.0
+    signal[next_ret < -threshold_rate] = -1.0
+    signal[next_ret.isna()] = np.nan
     return signal
 
 
@@ -192,7 +207,9 @@ def train_symbol(symbol: str) -> Tuple[object, Dict]:
     if df.empty:
         raise ValueError(f"No features in DB for {symbol}")
 
-    df["target"] = make_target(df["close"])
+    spread = _get_spread(symbol)
+    logger.info(f"Spread {symbol}: {spread:.4f}  fee_rate={FEE_RATE}")
+    df["target"] = make_target(df["close"], spread)
     df = df.dropna(subset=FEATURE_COLS + ["target"]).reset_index(drop=True)
     df["target"] = df["target"].astype(int)
 
@@ -263,7 +280,9 @@ def train_symbol(symbol: str) -> Tuple[object, Dict]:
         "accuracy": round(best_acc, 4),
         "f1_macro": round(best_f1, 4),
         "sharpe_ratio": round(best_sharpe, 4),
-        "threshold": TARGET_THRESHOLD,
+        "threshold_type": "dynamic",
+        "spread_used": round(spread, 4),
+        "fee_rate": FEE_RATE,
         "feature_cols": FEATURE_COLS,
         "label_map": LABEL_MAP,
         "label_inv": LABEL_INV,
