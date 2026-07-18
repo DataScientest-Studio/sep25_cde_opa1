@@ -86,8 +86,15 @@ def compute_lag_features(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def load_ohlcv_from_mongo(symbol: str) -> pd.DataFrame:
-    """Load and sort historical OHLCV data for one symbol from MongoDB."""
+def load_ohlcv_from_mongo(symbol: str, interval: str = "1d") -> pd.DataFrame:
+    """Load and sort historical OHLCV data for one symbol/interval from MongoDB.
+
+    `interval` defaults to "1d": the batch feature pipeline (Airflow
+    fetch_and_store -> PostgreSQL features table) is scoped to a single
+    timeframe, since the features table has no `interval` column of its own.
+    Without this filter, 1h/4h/1d candles used to be mixed together before
+    indicator computation.
+    """
     from src.data.config import SETTINGS
     from src.data.connector.connector import connect_to_mongo, read_from_mongo
 
@@ -104,7 +111,7 @@ def load_ohlcv_from_mongo(symbol: str) -> pd.DataFrame:
     db = client[db_name]
     collection = SETTINGS["MONGO_COLLECTION_HISTORICAL"]
 
-    df = read_from_mongo(db, collection, query={"symbol": symbol})
+    df = read_from_mongo(db, collection, query={"symbol": symbol, "interval": interval})
     client.close()
 
     if df.empty:
@@ -115,14 +122,14 @@ def load_ohlcv_from_mongo(symbol: str) -> pd.DataFrame:
     return df
 
 
-def build_features(symbol: str) -> pd.DataFrame:
+def build_features(symbol: str, interval: str = "1d") -> pd.DataFrame:
     """
-    Load OHLCV data for a symbol from MongoDB and compute all technical indicators.
+    Load OHLCV data for a symbol/interval from MongoDB and compute all technical indicators.
 
     Returns the enriched DataFrame, or an empty DataFrame if no source data found.
     """
-    logger.info(f"Building features for {symbol}")
-    df = load_ohlcv_from_mongo(symbol)
+    logger.info(f"Building features for {symbol} ({interval})")
+    df = load_ohlcv_from_mongo(symbol, interval)
     if df.empty:
         return df
 

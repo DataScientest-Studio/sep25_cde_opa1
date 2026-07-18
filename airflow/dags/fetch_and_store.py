@@ -45,7 +45,7 @@ def compute_and_store_features() -> None:
     logger = logging.getLogger("airflow.task")
     for symbol in SYMBOLS:
         logger.info(f"Building features for {symbol}")
-        df = build_features(symbol)
+        df = build_features(symbol, interval="1d")
         if df.empty:
             logger.warning(f"{symbol}: aucune donnée OHLCV — features ignorées")
             continue

@@ -50,7 +50,7 @@ def main():
     print("=" * 60)
     for symbol in SYMBOLS:
       print(f"\n{symbol}: building features...")
-      df = build_features(symbol)
+      df = build_features(symbol, interval="1d")
       if df.empty:
         print(f"{symbol}: no OHLCV data available — features skipped")
         continue
