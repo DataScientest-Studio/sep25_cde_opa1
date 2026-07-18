@@ -6,6 +6,7 @@ numpy>=1.26,<2.3
 # MySQL / PGSql
 SQLAlchemy~=2.0.45
 psycopg~=3.3.2
+psycopg2-binary~=2.9.9
 # Mongo
 pymongo~=4.15.5
 # Binance API
